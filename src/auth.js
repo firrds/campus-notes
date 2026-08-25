@@ -2,12 +2,14 @@
 
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { md5 } = require('./db.js');
+const { verifyPassword } = require('./db.js');
 const { loginPage } = require('./views.js');
 
-// V3 -- the signing secret is committed to the repository. Anyone who can read
-// the source can mint a valid admin session. Fixed on Day 4.
-const JWT_SECRET = 'campus-notes-dev-secret';
+// V3 fixed -- read the secret from the environment, and refuse to start without it.
+const JWT_SECRET = process.env.SESSION_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('SESSION_SECRET is not set. Refusing to start with a default secret.');
+}
 
 const router = express.Router();
 
@@ -19,23 +21,12 @@ router.post('/login', (req, res) => {
   const { username = '', password = '' } = req.body || {};
   const db = req.app.locals.db;
 
-  // V5 -- MD5, unsalted. See db.js.
-  const hash = md5(password);
-
-  // V1 -- BOTH the username and the password hash are concatenated into the
-  // SQL, so the whole credential check lives inside the query string. A
-  // username of
-  //   ' OR '1'='1' --
-  // comments the password condition out entirely and returns the first row in
-  // the table, which is the administrator. This is an authentication bypass,
-  // not merely an odd row selection. Fixed on Day 4.
+   // V1 fixed -- the username is a bound parameter, so a quote in it is data.
   const row = db
-    .prepare(
-      `SELECT * FROM users WHERE username = '${username}' AND password_hash = '${hash}'`
-    )
-    .get();
+    .prepare('SELECT * FROM users WHERE username = ?')
+    .get(username);
 
-  if (!row) {
+  if (!row || !verifyPassword(password, row.password_hash)) {
     return res.status(401).send(loginPage('Incorrect username or password.'));
   }
 
