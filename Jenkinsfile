@@ -23,6 +23,15 @@ pipeline {
       steps { sh 'docker build -t $IMAGE:$TAG -t $IMAGE:latest .' }
     }
 
+    stage('SAST') {
+      steps {
+        sh '''
+          docker run --rm -v "$PWD:/src" semgrep/semgrep:${SEMGREP_TAG} \
+            semgrep --config /src/.semgrep/rules.yml --error /src/src
+        '''
+      }
+    }
+
     stage('Smoke test') {
       steps {
         sh '''
