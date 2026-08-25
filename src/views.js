@@ -16,6 +16,17 @@ function layout(title, bodyHtml) {
 </html>`;
 }
 
+// V2 fixed.
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+
 function loginPage(error) {
   const banner = error ? `<p class="error">${error}</p>` : '';
   return layout('Sign in', `
@@ -31,7 +42,7 @@ function loginPage(error) {
 function notesPage(notes, user) {
   const who = user ? `Signed in as ${user.username}` : '<a href="/login">Sign in</a>';
   const items = notes
-    .map((n) => `<li><a href="/notes/${n.id}">${n.title}</a> <small>— ${n.author}, ${n.created_at}</small></li>`)
+    .map((n) => `<li><a href="/notes/${n.id}">${escapeHtml(n.title)}</a> <small>— ${escapeHtml(n.author)}, ${n.created_at}</small></li>`)
     .join('\n');
   const form = user
     ? `<h2>Post a note</h2>
@@ -44,13 +55,14 @@ function notesPage(notes, user) {
   return layout('Notes', `<p>${who}</p><h1>Notes</h1><ul>${items}</ul>${form}`);
 }
 
-// V2 -- the note body is interpolated straight into the page. Anything a user
-// posts is executed by every reader's browser. Fixed on Day 4.
 function notePage(note) {
-  return layout(note.title, `
-    <h1>${note.title}</h1>
-    <p class="meta">${note.author} · ${note.created_at}</p>
-    <div class="note-body">${note.body}</div>
+    // V2 fixed (continued) -- the title also reaches the <title> tag inside
+  // layout(), so it is escaped at the call site too, same as every other
+  // caller-supplied piece of note data.
+  return layout(escapeHtml(note.title), `
+    <h1>${escapeHtml(note.title)}</h1>
+    <p class="meta">${escapeHtml(note.author)} · ${note.created_at}</p>
+    <div class="note-body">${escapeHtml(note.body)}</div>
     <p><a href="/">Back to notes</a></p>`);
 }
 
