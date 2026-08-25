@@ -7,10 +7,19 @@ const path = require('node:path');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'campus-notes.db');
 
-// V5 -- passwords are hashed with MD5. MD5 is fast and unsalted, so a stolen
-// table can be reversed with a wordlist in seconds. Fixed on Day 4.
-function md5(text) {
-  return crypto.createHash('md5').update(text).digest('hex');
+// V5 fixed -- scrypt with a per-user random salt. Deliberately slow.
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const derived = crypto.scryptSync(password, salt, 32).toString('hex');
+  return `scrypt$${salt}$${derived}`;
+}
+
+function verifyPassword(password, stored) {
+  const [scheme, salt] = stored.split('$');
+  if (scheme !== 'scrypt') return false;
+  const candidate = Buffer.from(hashPassword(password, salt));
+  const expected = Buffer.from(stored);
+  return candidate.length === expected.length &&
+         crypto.timingSafeEqual(candidate, expected);
 }
 
 const SCHEMA = `
@@ -55,7 +64,7 @@ function seedIfEmpty(db) {
   const insertUser = db.prepare(
     'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)'
   );
-  for (const u of USERS) insertUser.run(u.username, md5(u.password), u.role);
+  for (const u of USERS) insertUser.run(u.username, hashPassword(u.password), u.role);
 
   const notes = JSON.parse(
     fs.readFileSync(path.join(__dirname, '..', 'seed', 'notes.json'), 'utf8')
@@ -66,4 +75,4 @@ function seedIfEmpty(db) {
   for (const note of notes) insertNote.run(note.author, note.title, note.body);
 }
 
-module.exports = { open, md5, DB_PATH };
+module.exports = { open, hashPassword, verifyPassword, DB_PATH };
