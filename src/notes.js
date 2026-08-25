@@ -20,6 +20,7 @@ router.post('/notes', (req, res) => {
 
   const { title = '', body = '' } = req.body || {};
   if (!title.trim()) return res.status(400).send('A note needs a title.');
+  if (title.length > 120) return res.status(400).send('A note title cannot exceed 120 characters.');
 
   req.app.locals.db
     .prepare('INSERT INTO notes (author, title, body) VALUES (?, ?, ?)')
