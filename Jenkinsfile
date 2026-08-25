@@ -26,8 +26,14 @@ pipeline {
     stage('SAST') {
       steps {
         sh '''
-          docker run --rm -v "$PWD:/src" semgrep/semgrep:${SEMGREP_TAG} \
-            semgrep --config /src/.semgrep/rules.yml --error /src/src
+          docker run --rm \
+            -v jenkins-data:/var/jenkins_home:ro \
+            -w "$WORKSPACE" \
+            semgrep/semgrep:${SEMGREP_TAG} \
+            semgrep \
+              --config .semgrep/rules.yml \
+              --error \
+              src
         '''
       }
     }
