@@ -25,6 +25,7 @@ function createApp() {
   app.use(auth.router);
   app.use(filesRouter);
   app.use(adminRouter);
+  app.use(require('./health.js'));
   app.use(notesRouter);
 
   return app;
