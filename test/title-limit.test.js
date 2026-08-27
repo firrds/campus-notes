@@ -3,6 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 
 process.env.DB_PATH = ':memory:';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 const { createApp } = require('../src/server.js');
 
 let server, base, cookie;
