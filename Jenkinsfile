@@ -94,6 +94,25 @@ pipeline {
     stage('Push') {
       steps { sh 'docker push $IMAGE:$TAG && docker push $IMAGE:latest' }
     }
+
+    stage('Deploy to vm-app') {
+      steps {
+        sshagent(credentials: ['vm-app-01']) {
+          withCredentials([string(credentialsId: 'campus-notes-secret-01', variable: 'SESSION_SECRET')]) {
+            sh '''
+              ssh -o StrictHostKeyChecking=accept-new ubuntu@192.168.3.101 "
+                docker pull $IMAGE:$TAG &&
+                (docker rm -f campus-notes 2>/dev/null || true) &&
+                docker run -d --name campus-notes --restart=unless-stopped \
+                  -e SESSION_SECRET=$SESSION_SECRET \
+                  -p 3000:3000 $IMAGE:$TAG
+              "
+            '''
+          }
+        }
+      }
+    }
+
   }
 
   post {
