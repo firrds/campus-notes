@@ -37,6 +37,14 @@ pipeline {
         '''
       }
     }
+    stage('Dependency audit') {
+      steps {
+        sh '''
+          docker run --rm -v "$PWD:/app" -w /app node:24-slim \
+            sh -c "npm ci && npm audit --audit-level=high"
+        '''
+      }
+    }
 
     stage('Smoke test') {
       steps {
