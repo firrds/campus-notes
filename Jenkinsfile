@@ -5,6 +5,7 @@ pipeline {
     REGISTRY = '192.168.3.10:5000'
     IMAGE    = "${REGISTRY}/devops-01/campus-notes"
     TAG      = "${env.BUILD_NUMBER}"
+    DEPLOY_HOST = 'ubuntu@192.168.3.101'
   }
 
   options {
@@ -21,6 +22,23 @@ pipeline {
 
     stage('Build image') {
       steps { sh 'docker build -t $IMAGE:$TAG -t $IMAGE:latest .' }
+    }
+    stage('Unit tests') {
+      steps {
+        sh '''
+          docker run --rm \
+            -v jenkins-data:/var/jenkins_home:ro \
+            -e SRC="$WORKSPACE" \
+            node:24-slim \
+            sh -c '
+              mkdir /app
+              cp -a "$SRC"/. /app/
+              cd /app
+              npm ci
+              npm test
+            '
+        '''
+      }
     }
 
     stage('SAST') {

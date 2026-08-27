@@ -1,0 +1,32 @@
+'use strict';
+const { test, before, after } = require('node:test');
+const assert = require('node:assert');
+
+process.env.DB_PATH = ':memory:';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
+const SRC = process.env.CAMPUS_NOTES_SRC || '../src';
+const { createApp } = require(`${SRC}/server.js`);
+
+let server, base;
+before(async () => {
+  server = createApp().listen(0);
+  await new Promise((r) => server.once('listening', r));
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+after(() => server.close());
+
+test('an allowlisted file downloads', async () => {
+  const res = await fetch(`${base}/download?file=handbook.txt`);
+  assert.strictEqual(res.status, 200);
+  assert.match(await res.text(), /ICT Department Handbook/);
+});
+
+test('../ cannot escape the public directory', async () => {
+  const res = await fetch(`${base}/download?file=../src/auth.js`);
+  assert.strictEqual(res.status, 404, 'the traversal payload returned application source');
+});
+
+test('a nested traversal is also refused', async () => {
+  const res = await fetch(`${base}/download?file=../../app/src/auth.js`);
+  assert.strictEqual(res.status, 404);
+});
