@@ -4,15 +4,17 @@
   "private": true,
   "description": "A small note board for a polytechnic department. DELIBERATELY INSECURE — training use only.",
   "main": "src/server.js",
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test",
     "sast": "semgrep --config .semgrep/rules.yml --error src/"
   },
   "dependencies": {
-    "express": "^5.1.0",
     "cookie-parser": "^1.4.7",
-    "jsonwebtoken": "8.5.1"
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3"
   }
 }
