@@ -40,8 +40,17 @@ pipeline {
     stage('Dependency audit') {
       steps {
         sh '''
-          docker run --rm -v "$PWD:/app" -w /app node:24-slim \
-            sh -c "npm ci && npm audit --audit-level=high"
+          docker run --rm \
+            -v jenkins-data:/var/jenkins_home:ro \
+            -e SRC="$WORKSPACE" \
+            node:24-slim \
+            sh -c '
+              mkdir /app
+              cp "$SRC/package.json" "$SRC/package-lock.json" /app/
+              cd /app
+              npm ci
+              npm audit --audit-level=high
+            '
         '''
       }
     }
